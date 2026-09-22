@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="test-notification-api-unavailable.xml" />
+	<munit:test name="test-notification-api-unavailable-post:orders:application:json:RouterTest" doc:id="c1f0eb46-9048-48c6-b89b-9ea3615af4fd" description="Test">
+		<munit:behavior >
+			<munit:set-event doc:name="Set Event" doc:id="0a5a210c-7b03-4166-a8c0-c3161b15ab9d" >
+				<munit:payload value='#[{&#10;  "customerId": "CUST1001",&#10;  "customerName": "Hruday",&#10;  "customerEmail": "hruday@example.com",&#10;  "items": [&#10;    {&#10;      "productId": "P1001",&#10;      "quantity": 2&#10;    }&#10;  ]&#10;}]' />
+			</munit:set-event>
+			<munit-tools:mock-when doc:name="Mock when" doc:id="91071cd1-2277-44c8-84c1-1117bcc57fec" processor="http:request">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="78d2f78f-2039-429a-ab7e-9e3722cb5d9a" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="HTTP:CONNECTIVITY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to post:orders:application:json:Router" doc:id="622ce3be-2487-4849-b2b7-1e395e61d6e1" name="post:orders:application:json:Router"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="4cf74eb3-76fe-4952-92e6-5af800504028" expression="#[vars.httpStatus as Number]" is="#[MunitTools::equalTo(503)]"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

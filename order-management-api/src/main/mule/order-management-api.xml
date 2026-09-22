@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+      xmlns:db="http://www.mulesoft.org/schema/mule/db"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+      http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+      http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+      http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+
+    <apikit:config
+        outboundHeadersMapName="outboundHeadersMapName"
+        httpStatusVarName="httpStatus"
+        doc:name="Router"
+        doc:id="e9b68d1d-1726-493c-88de-8b868f292817"
+        name="Router"
+        api="order-management-api.raml"
+        parser="AMF">
+		<apikit:flow-mappings >
+			<apikit:flow-mapping resource="/orders" action="post" content-type="application/json" flow-ref="post:orders:application:json:Router" />
+		</apikit:flow-mappings>
+	</apikit:config>
+
+    <http:listener-config
+        name="HTTP_Listener_config"
+        doc:name="HTTP Listener config"
+        doc:id="c9d308a8-4fcb-4e88-9f74-aa4abe750d4f">
+
+        <http:listener-connection
+            host="0.0.0.0"
+            port="${http.port}"/>
+
+    </http:listener-config>
+
+    <configuration-properties doc:name="Configuration properties" doc:id="f34f5ad4-5863-4368-a037-8a7a3344d6bb" file="application.properties" />
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="5b1a8b04-f8c5-4564-9bb8-8645fdaaf961" >
+		<http:request-connection host="product-api-bgojo8.5sc6y6-3.usa-e2.cloudhub.io" port="443" protocol="HTTPS"/>
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="142a2002-35c1-4316-9087-49ed029da3bf" >
+		<http:request-connection host="mock-order-api-bgojo8.5sc6y6-4.usa-e2.cloudhub.io" port="443" protocol="HTTPS"/>
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration2" doc:name="HTTP Request configuration" doc:id="3b5187df-6026-4185-839c-837782e94d2e" >
+		<http:request-connection host="mock-notification-api-bgojo8.5sc6y6-2.usa-e2.cloudhub.io" port="443" protocol="HTTPS"/>
+	</http:request-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="746a806c-1c93-46fd-af74-0c0f20590fae" >
+		<db:generic-connection url="jdbc:postgresql://ep-purple-flower-b3w389un-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&amp;channel_binding=require" driverClassName="org.postgresql.Driver" user="neondb_owner" password="${db.password}" />
+	</db:config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="65aef918-2cf5-4195-9c30-ab3743e8ad7c" >
+		<email:smtp-connection host="smtp-relay.brevo.com" port="587" user="b883cc001@smtp-brevo.com" password="${smtp.password}" />
+	</email:smtp-config>
+	<flow
+        name="order-management-apiFlow"
+        doc:id="10448044-50d5-49cc-b40b-af122678ba4e">
+
+        <http:listener
+            doc:name="Listener"
+            doc:id="cf116e85-f0f6-46de-99ac-6ffb76f4b5eb"
+            config-ref="HTTP_Listener_config"
+            path="/api/*">
+
+            <http:response
+                statusCode="#[vars.httpStatus default 200]"/>
+
+            <http:error-response
+                statusCode="#[vars.httpStatus default 500]"/>
+
+        </http:listener>
+
+        <apikit:router
+            doc:name="APIkit Router"
+            doc:id="c495dbb5-7954-445e-91b6-4108ee5fab81"
+            config-ref="Router"/>
+
+    </flow>
+
+    <flow name="post:orders:application:json:Router" doc:id="13c9e1db-5feb-440a-a927-7596b9cf6dff">
+		<logger level="INFO" doc:name="Log Incoming Order" doc:id="c5b9bc19-bea0-44a3-92c0-9d081e002a67" message='#["Order request received | customerId=" ++&#10;    (payload.customerId default "UNKNOWN") ++&#10;    " | productId=" ++&#10;    ((payload.items[0].productId) default "UNKNOWN") ++&#10;    " | quantity=" ++&#10;    (((payload.items[0].quantity) default 0) as String)]'/>
+		<set-variable
+            value="#[payload]"
+            doc:name="Set Variable"
+            doc:id="caa650ef-a501-49f6-83a1-55a64fdba441"
+            variableName="orderRequest"/>
+
+        <choice
+            doc:name="Validate Order Request"
+            doc:id="1773da83-bdca-468b-ac5e-fba3562ba891">
+
+            <when expression='#[payload.customerId != null and
+  payload.customerId != "" and
+  payload.customerName != null and
+  payload.customerName != "" and
+  payload.customerEmail != null and
+  payload.customerEmail != "" and
+  payload.items != null and
+  sizeOf(payload.items) &gt; 0 and
+  payload.items[0].productId != null and
+  payload.items[0].productId != "" and
+  payload.items[0].quantity != null and
+  ((payload.items[0].quantity as Number) &gt; 0)]'>
+
+                <set-variable
+                    value="#[payload.customerId]"
+                    doc:name="Set Variable"
+                    doc:id="5d9539db-a921-45f5-913a-4402796dea7a"
+                    variableName="customerId"/>
+
+                <set-variable
+                    value="#[payload.customerName]"
+                    doc:name="Set Variable"
+                    doc:id="fa5c7145-4c4d-4e7c-a854-5333cfe1e471"
+                    variableName="customerName"/>
+
+                <set-variable
+                    value="#[payload.customerEmail]"
+                    doc:name="Set Variable"
+                    doc:id="fd8e5a5c-eddc-44d6-9893-0305744526a1"
+                    variableName="customerEmail"/>
+
+                <set-variable
+                    value="#[payload.items[0].productId]"
+                    doc:name="Set Variable"
+                    doc:id="856ffb4b-92d0-485f-b96d-8cbd0d550bd8"
+                    variableName="productId"/>
+
+                <set-variable
+                    value="#[((payload.items[0].quantity default 0) as Number)]"
+                    doc:name="Set Variable"
+                    doc:id="29b8db7a-fae6-4325-a6af-4568036a43f3"
+                    variableName="orderQuantity"/>
+
+                <try
+                    doc:name="Try"
+                    doc:id="0581f47a-b15f-4760-bf70-cd82a78e7fb6">
+					<http:request
+                        method="GET"
+                        doc:name="Request"
+                        doc:id="3b7e197d-de87-4f55-89e6-a0cba80196a9"
+                        target="productResponse" config-ref="HTTP_Request_configuration" path="/api/products/{productId}">
+
+                        <http:headers><![CDATA[#[output application/java
+---
+{
+    "content-type" : "application/json"
+}]]]></http:headers>
+						<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	productId : vars.productId
+}]]]></http:uri-params>
+
+                    </http:request>
+
+                    <logger level="INFO" doc:name="Log Product Response" doc:id="84afd196-31b3-4bcd-a8fd-e5b24c95c25b" message='#["Product response | productId=" ++&#10;   (vars.productResponse.productId default "UNKNOWN") ++&#10;   " | productName=" ++&#10;   (vars.productResponse.productName default "UNKNOWN") ++&#10;   " | price=" ++&#10;   ((vars.productResponse.price default 0) as String) ++&#10;   " | availableStock=" ++&#10;   ((vars.productResponse.availableStock default 0) as String)]'/>
+					<choice
+                        doc:name="Choice"
+                        doc:id="e43d6974-6ac2-4b91-9ac1-bd754494ad70">
+
+                        <when expression="#[vars.orderQuantity &lt;= ((vars.productResponse.availableStock default 0) as Number)]">
+
+                            <logger level="INFO" doc:name="Logger" doc:id="e10b2f02-ea6d-4e50-b907-e6d11d9b3441" />
+							<ee:transform
+                                doc:name="Transform Message"
+                                doc:id="3e8db980-3690-432d-9a3b-b8de95d0bd46">
+
+                                <ee:message>
+
+                                    <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+    productId: vars.productId,
+    productName: vars.productResponse.productName,
+    price: ((vars.productResponse.price default 0) as Number),
+    quantity: vars.orderQuantity,
+    itemSubtotal:
+        ((vars.productResponse.price default 0) as Number)
+        * vars.orderQuantity
+}]]></ee:set-payload>
+
+                                </ee:message>
+
+                            </ee:transform>
+
+                            <set-variable
+                                value="#[output application/java --- ((vars.productResponse.price default 0) as Number) * vars.orderQuantity]"
+                                doc:name="Set Variable"
+                                doc:id="f2ddc582-378c-458c-9482-1be5bbc56b7f"
+                                variableName="subtotal"/>
+
+                            <set-variable
+                                value="#[if (vars.subtotal &gt; 10000) vars.subtotal * 0.10 else 0]"
+                                doc:name="Set Variable"
+                                doc:id="f4ce0826-5a13-44fe-a9b6-656a718490c7"
+                                variableName="discount"/>
+
+                            <set-variable
+                                value="#[vars.subtotal - vars.discount]"
+                                doc:name="Set Variable"
+                                doc:id="d6f4ef9b-3f4f-42ba-b361-47e4230e89a4"
+                                variableName="totalAmount"/>
+
+                            <ee:transform
+                                doc:name="Transform Message"
+                                doc:id="79972f69-845b-42bb-99e5-0f9875e90d97">
+
+                                <ee:message>
+
+                                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    customerId: vars.customerId,
+    customerName: vars.customerName,
+    customerEmail: vars.customerEmail,
+    productId: vars.productId,
+    productName: vars.productResponse.productName,
+    quantity: vars.orderQuantity,
+    items: vars.orderRequest.items,
+    subtotal: vars.subtotal,
+    discount: vars.discount,
+    totalAmount: vars.totalAmount
+}]]></ee:set-payload>
+
+                                </ee:message>
+
+                            </ee:transform>
+							<try
+                                doc:name="Try"
+                                doc:id="3c67e719-5b71-4877-b68f-71408120393c">
+
+                                <http:request
+                                    method="POST"
+                                    doc:name="Request"
+                                    doc:id="800b9476-5a61-452b-a69e-7ec2cea21988"
+                                    config-ref="HTTP_Request_configuration1" path="/api/orders" target="orderResponse"/>
+
+                                <db:insert doc:name="Insert" doc:id="d9e8c2fd-c7e1-442c-9169-9c4afc7b8a08" config-ref="Database_Config">
+									<db:sql ><![CDATA[INSERT INTO orders (
+    order_id,
+    customer_id,
+    customer_name,
+    customer_email,
+    product_id,
+    product_name,
+    quantity,
+    subtotal,
+    discount,
+    total_amount,
+    status
+)
+VALUES (
+    :orderId,
+    :customerId,
+    :customerName,
+    :customerEmail,
+    :productId,
+    :productName,
+    :quantity,
+    :subtotal,
+    :discount,
+    :totalAmount,
+    :status
+)]]></db:sql>
+									<db:input-parameters ><![CDATA[#[{
+  orderId: vars.orderResponse.orderId,
+  customerId: vars.customerId,
+  customerName: vars.customerName,
+  customerEmail: vars.customerEmail,
+  productId: vars.productId,
+  productName: vars.productResponse.productName,
+  quantity: vars.orderQuantity,
+  subtotal: vars.subtotal,
+  discount: vars.discount,
+  totalAmount: vars.totalAmount,
+  status: "CONFIRMED"
+}]]]></db:input-parameters>
+								</db:insert>
+								<email:send doc:name="Send" doc:id="91260d56-9687-47a5-bea2-04e232423a5b" config-ref="Email_SMTP" fromAddress="hrudaypedireddy8119@gmail.com" toAddresses="#[[vars.customerEmail]]" subject='#["Order Confirmation - " ++ (vars.orderResponse.orderId default "")]'>
+									<email:cc-addresses />
+									<email:reply-to-addresses />
+									<email:body >
+										<email:content ><![CDATA[#[%dw 2.0
+output text/plain
+---
+"Hello " ++ (vars.customerName default "") ++ ",\n\n" ++
+"Your order has been confirmed successfully.\n\n" ++
+"Order ID: " ++ vars.orderResponse.orderId ++ "\n" ++
+"Product: " ++ vars.productResponse.productName ++ "\n" ++
+"Quantity: " ++ (vars.orderQuantity as String) ++ "\n" ++
+"Subtotal: ₹" ++ (vars.subtotal as String) ++ "\n" ++
+"Discount: ₹" ++ (vars.discount as String) ++ "\n" ++
+"Total Amount: ₹" ++ (vars.totalAmount as String) ++ "\n\n" ++
+"Thank you for your order."]]]></email:content>
+									</email:body>
+								</email:send>
+								<ee:transform
+                                    doc:name="Transform Message"
+                                    doc:id="9c3644e7-f5ab-4be9-9c1f-bc2b63557a0e">
+
+                                    <ee:message>
+
+                                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  orderId: vars.orderResponse.orderId,
+  customerEmail: vars.orderResponse.customerEmail,
+  productName: vars.orderResponse.productName,
+  quantity: vars.orderResponse.quantity,
+  subtotal: vars.orderResponse.subtotal,
+  discount: vars.orderResponse.discount,
+  totalAmount: vars.orderResponse.totalAmount,
+  status: vars.orderResponse.status
+}]]></ee:set-payload>
+
+                                    </ee:message>
+
+                                </ee:transform>
+
+                                <try doc:name="Try" doc:id="f0ce05df-2cb5-43a4-b495-f0bbe4f5723f" >
+									<http:request method="POST" doc:name="Request" doc:id="78d2f78f-2039-429a-ab7e-9e3722cb5d9a" config-ref="HTTP_Request_configuration2" path="/api/notifications">
+									</http:request>
+									<ee:transform doc:name="Transform Message" doc:id="f8a0aa6f-503d-418b-a38e-0f1809a98eb3">
+
+                                    <ee:message>
+
+                                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var notification =
+    if (payload is String)
+        read(payload, "application/json")
+    else
+        payload
+---
+{
+    orderId: notification.orderId,
+    customerId: vars.customerId,
+    productId: vars.productResponse.productId,
+    productName: notification.productName,
+    quantity: notification.quantity,
+    subtotal: notification.subtotal,
+    discount: notification.discount,
+    totalAmount: notification.totalAmount,
+    status: notification.status,
+    message: notification.message
+}]]></ee:set-payload>
+
+                                    </ee:message>
+
+                                </ee:transform>
+									<error-handler >
+										<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="664a8692-92d9-4bd0-aff2-c7692d0abd11" type="HTTP:CONNECTIVITY">
+											<set-variable value="503" doc:name="Set Variable" doc:id="6f52a2ce-5d22-44b9-a076-6c6c244b5b84" variableName="httpStatus"/>
+											<ee:transform doc:name="Transform Message" doc:id="7152626a-88ba-4d8f-9abd-e55cd9991ae3" >
+												<ee:message >
+													<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "NOTIFICATION_API_UNAVAILABLE",
+    message: "Notification API is unavailable"
+}]]></ee:set-payload>
+												</ee:message>
+											</ee:transform>
+										</on-error-continue>
+										<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7113f483-8c34-4e9a-baab-53a5aabde557" type="HTTP:NOT_FOUND">
+											<set-variable value="503" doc:name="Set Variable" doc:id="1347d6e3-5dca-46ef-8a8f-43c330eef138" variableName="httpStatus"/>
+											<ee:transform doc:name="Transform Message" doc:id="d9239af4-3233-4ce2-8ffd-266bb9b7dff7" >
+												<ee:message >
+													<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+  "error": "NOTIFICATION_API_UNAVAILABLE",
+  "message": "Notification API is unavailable"
+}]]></ee:set-payload>
+												</ee:message>
+											</ee:transform>
+										</on-error-continue>
+									</error-handler>
+								</try>
+
+                                <error-handler>
+
+                                    <on-error-continue
+                                        enableNotifications="true"
+                                        logException="true"
+                                        doc:name="On Error Continue"
+                                        doc:id="6242c36c-728a-437b-a852-3aac79dc641b">
+
+                                        <set-variable
+                                            value="503"
+                                            doc:name="Set Variable"
+                                            doc:id="5620eae6-fbd5-444a-aea6-4759dc3e9215"
+                                            variableName="httpStatus"/>
+
+                                        <ee:transform
+                                            doc:name="Transform Message"
+                                            doc:id="e00ad835-6894-47ed-aa53-378b46bd9e07">
+
+                                            <ee:message>
+
+                                                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "ORDER_API_UNAVAILABLE",
+    message: "Order Management API is unavailable"
+}]]></ee:set-payload>
+
+                                            </ee:message>
+
+                                        </ee:transform>
+
+                                    </on-error-continue>
+
+                                </error-handler>
+
+                            </try>
+
+                        </when>
+
+                        <otherwise>
+
+                            <set-variable
+                                value="409"
+                                doc:name="Set Variable"
+                                doc:id="0db5b856-b7df-4e77-b302-7acc141c51c7"
+                                variableName="httpStatus"/>
+
+                            <ee:transform
+                                doc:name="Transform Message"
+                                doc:id="2b8e78de-4d21-46f2-b848-29cd20008983">
+
+                                <ee:message>
+
+                                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "INSUFFICIENT_STOCK",
+    message: "Requested quantity exceeds available stock",
+    productId: vars.productId,
+    requestedQuantity: vars.orderQuantity,
+    availableStock: vars.productResponse.availableStock
+}]]></ee:set-payload>
+
+                                </ee:message>
+
+                            </ee:transform>
+
+                        </otherwise>
+
+                    </choice>
+
+                    <error-handler>
+
+                        <on-error-continue
+                            enableNotifications="true"
+                            logException="true"
+                            doc:name="On Error Continue"
+                            doc:id="06368620-bf19-49f3-8b1f-e91c9902fa6c">
+
+                            <choice
+                                doc:name="Choice"
+                                doc:id="e17ad7c7-3c3e-4467-97b4-69bb3ddd84d6">
+
+                                <!-- PRODUCT NOT FOUND -->
+                                <when expression='#[error.errorType.identifier == "NOT_FOUND"]'>
+
+                                    <set-variable
+                                        value="404"
+                                        doc:name="Set Variable"
+                                        doc:id="bca3f6b0-3de5-470f-8701-aee3184f6ea8"
+                                        variableName="httpStatus"/>
+
+                                    <ee:transform
+                                        doc:name="Transform Message"
+                                        doc:id="3bd42ca8-46bc-48e9-88c7-1003fea90952">
+
+                                        <ee:message>
+
+                                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "PRODUCT_NOT_FOUND",
+    message: "Product not found",
+    productId: vars.productId
+}]]></ee:set-payload>
+
+                                        </ee:message>
+
+                                    </ee:transform>
+
+                                </when>
+
+                                <!-- PRODUCT API CONNECTIVITY ERROR -->
+                                <when expression='#[error.errorType.identifier == "CONNECTIVITY"]'>
+
+                                    <set-variable
+                                        value="503"
+                                        doc:name="Set Variable"
+                                        variableName="httpStatus"/>
+
+                                    <ee:transform
+                                        doc:name="Product API Unavailable">
+
+                                        <ee:message>
+
+                                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "EXTERNAL_API_ERROR",
+    message: "Product API is unavailable"
+}]]></ee:set-payload>
+
+                                        </ee:message>
+
+                                    </ee:transform>
+
+                                </when>
+
+                                <!-- OTHER PRODUCT API ERRORS -->
+                                <otherwise>
+
+                                    <set-variable
+                                        value="500"
+                                        doc:name="Set Variable"
+                                        doc:id="8fcaea36-41fd-45f9-a1d3-7365a71df819"
+                                        variableName="httpStatus"/>
+
+                                    <ee:transform
+                                        doc:name="Transform Message"
+                                        doc:id="08e48cb5-0b94-4631-95a7-651b355739f8">
+
+                                        <ee:message>
+
+                                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "EXTERNAL_API_ERROR",
+    message: "Product API is unavailable"
+}]]></ee:set-payload>
+
+                                        </ee:message>
+
+                                    </ee:transform>
+
+                                </otherwise>
+
+                            </choice>
+
+                        </on-error-continue>
+
+                    </error-handler>
+
+                </try>
+
+            </when>
+
+            <otherwise>
+
+                <set-variable
+                    value="400"
+                    doc:name="Set Variable"
+                    doc:id="879186fa-e32d-49c0-85b6-a63129d93f1a"
+                    variableName="httpStatus"/>
+
+                <ee:transform
+                    doc:name="Transform Message"
+                    doc:id="e6b6534f-9f43-4412-8607-e6c0b9445a29">
+
+                    <ee:message>
+
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "INVALID_REQUEST",
+    message: "Invalid order details"
+}]]></ee:set-payload>
+
+                    </ee:message>
+
+                </ee:transform>
+
+            </otherwise>
+
+        </choice>
+
+    </flow>
+
+</mule>

@@ -1,0 +1,25 @@
+# Maven
+target/
+
+# MuleSoft / Anypoint Studio
+.mule/
+.metadata/
+.settings/
+.project
+.classpath
+
+# Build artifacts
+*.jar
+*.war
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+*.local.properties
+order-management-api/src/main/resources/application-local.properties

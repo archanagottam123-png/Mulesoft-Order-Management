@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="new-test-suite.xml" />
+	<munit:test name="new-test-suite-post:orders:application:json:RouterTest" doc:id="6cc67018-f88b-4d06-8ad2-5bebf442c6a9" description="Test">
+		<munit:behavior >
+			<munit:set-event doc:name="Set Event" doc:id="21ecfa3a-1e20-4931-b95d-05535666831c" >
+				<munit:payload value='#[{&#10;  "customerId": "CUST1001",&#10;  "customerName": "Hruday",&#10;  "customerEmail": "hruday@example.com",&#10;  "items": [&#10;    {&#10;      "productId": "P1001",&#10;      "quantity": 2&#10;    }&#10;  ]&#10;}]' />
+			</munit:set-event>
+			<munit-tools:mock-when doc:name="Mock when" doc:id="c3914667-1dd1-4928-8905-c8efe90c003a" processor="http:request">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="GET" attributeName="method" />
+					<munit-tools:with-attribute whereValue="Request" attributeName="doc:name" />
+					<munit-tools:with-attribute whereValue="3b7e197d-de87-4f55-89e6-a0cba80196a9" attributeName="doc:id" />
+					<munit-tools:with-attribute whereValue="productResponse" attributeName="target" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="HTTP:CONNECTIVITY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to post:orders:application:json:Router" doc:id="e86aefd0-e97f-4c84-9cef-7c2a9bf37dde" name="post:orders:application:json:Router"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="af31ea8f-0524-4cf5-844d-2d0cd1bf6f67" expression="#[vars.httpStatus as Number]" is="#[MunitTools::equalTo(503)]"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

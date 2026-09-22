@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ef092595-f9df-49b1-8dbe-92a7b15e7311">
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+    </http:listener-config>
+    <apikit:config outboundHeadersMapName="outboundHeadersMapName" httpStatusVarName="httpStatus" doc:name="Router" doc:id="44306276-bc48-4de3-9c09-3272f02a60fd" name="Router" api="product-api.raml" parser="AMF" />
+    <flow name="product-apiFlow" doc:id="831e732d-9f42-4ffa-9bea-1be94c9e5ec1">
+        <http:listener doc:name="Listener" doc:id="2ac0b39e-0075-4308-852b-ca9582a6f608" config-ref="HTTP_Listener_config" path="/api/*" >
+			<http:response statusCode="#[vars.httpStatus default 200]" />
+		</http:listener>
+        <apikit:router doc:name="APIkit Router" doc:id="f01fc854-dae5-479d-a763-8f95001f4d60" config-ref="Router" />
+    </flow>
+    <flow name="get:\products\(productId):Router">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="productId">attributes.uriParams.'productId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message" doc:id="f389b3b7-5b01-4d7e-85a0-4bdd27ec738b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+var products = readUrl("classpath://products.json", "application/json")
+---
+products filter ((product) -> product.productId == vars.productId)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="55d6e86b-7b61-402f-b009-10ff28405999" >
+			<when expression='#[sizeOf(payload) &gt; 0]'>
+				<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+			</when>
+			<otherwise >
+				<set-variable value="404" doc:name="Set Variable" doc:id="0b06c814-3c54-49f6-8e29-b27ce85121e3" variableName="httpStatus" />
+				<ee:transform doc:name="Transform Message" doc:id="c2548312-ce2d-48df-9ad3-693111cba10d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    error: "PRODUCT_NOT_FOUND",
+    message: "Product not found",
+    productId: vars.productId
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+    </flow>
+</mule>

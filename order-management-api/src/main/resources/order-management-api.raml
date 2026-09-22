@@ -1,0 +1,70 @@
+#%RAML 1.0
+
+title: Order Management API
+version: v1
+baseUri: /api
+
+/orders:
+  post:
+    description: Create a new customer order
+
+    body:
+      application/json:
+        example:
+          {
+            "customerId": "CUST1001",
+            "customerName": "Hruday",
+            "customerEmail": "hruday@example.com",
+            "items": [
+              {
+                "productId": "P1001",
+                "quantity": 2
+              }
+            ]
+          }
+
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              {
+                "orderId": "ORD-10001",
+                "customerId": "CUST1001",
+                "subtotal": 5000,
+                "discount": 0,
+                "totalAmount": 5000,
+                "status": "CONFIRMED",
+                "message": "Order created successfully"
+              }
+
+      400:
+        body:
+          application/json:
+            example:
+              {
+                "error": "INVALID_REQUEST",
+                "message": "Invalid order details"
+              }
+
+      404:
+        body:
+          application/json:
+            example:
+              {
+                "error": "PRODUCT_NOT_FOUND",
+                "message": "Product not found",
+                "productId": "P9999"
+              }
+
+      409:
+        body:
+          application/json:
+          
+      500:
+        body:
+          application/json:
+
+      503:
+        body:
+          application/json:

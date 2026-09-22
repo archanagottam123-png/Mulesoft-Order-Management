@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="test-insufficient-stock.xml" />
+	<munit:test name="test-insufficient-stock-post:orders:application:json:RouterTest" doc:id="9ec6df4a-1a8b-4bcb-a49a-1f829c84b094" description="Test">
+		<munit:behavior >
+			<munit:set-event doc:name="Set Event" doc:id="4e980ec6-3348-41f4-8c1d-77dcc67b72bc" >
+				<munit:payload value='#[{&#10;  "customerId": "CUST1001",&#10;  "customerName": "Hruday",&#10;  "customerEmail": "hruday@example.com",&#10;  "items": [&#10;    {&#10;      "productId": "P1001",&#10;      "quantity": 20&#10;    }&#10;  ]&#10;}]' />
+			</munit:set-event>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to post:orders:application:json:Router" doc:id="9d3f21a0-8c03-486d-bfbd-fb3e6faad4a5" name="post:orders:application:json:Router"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="f74740e9-af4a-4545-b036-6cabdf733b97" expression="#[vars.httpStatus as Number]" is="#[MunitTools::equalTo(409)]"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

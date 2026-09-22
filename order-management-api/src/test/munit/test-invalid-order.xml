@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="test-invalid-order.xml" />
+	<munit:test name="test-invalid-order-post:orders:application:json:RouterTest" doc:id="4b1c9db9-5b7d-48d1-a312-66bffd0055ea" description="Test">
+		<munit:behavior >
+			<munit:set-event doc:name="Set Event" doc:id="e977adaa-bdaa-45a7-8f4a-51178dc6154d" >
+				<munit:payload value='#[{&#10;    customerId: "",&#10;    customerName: "Hruday",&#10;    customerEmail: "hruday@example.com",&#10;    items: [&#10;        {&#10;            productId: "P1001",&#10;            quantity: 2&#10;        }&#10;    ]&#10;}]' />
+			</munit:set-event>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to post:orders:application:json:Router" doc:id="70e5ab92-152e-49dd-b632-9c3595222c47" name="post:orders:application:json:Router"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="88cf667a-50fb-4ee6-b9fc-59bade95a2c6" expression="#[vars.httpStatus as Number]" is="#[MunitTools::equalTo(400)]"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

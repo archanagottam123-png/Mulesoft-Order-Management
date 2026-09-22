@@ -1,0 +1,26 @@
+[
+  {
+    "productId": "P1001",
+    "productName": "Wireless Headphones",
+    "price": 6000,
+    "availableStock": 10
+  },
+  {
+    "productId": "P1002",
+    "productName": "Mechanical Keyboard",
+    "price": 8000,
+    "availableStock": 5
+  },
+  {
+    "productId": "P1003",
+    "productName": "Smart Watch",
+    "price": 12000,
+    "availableStock": 8
+  },
+  {
+    "productId": "P1004",
+    "productName": "USB-C Hub",
+    "price": 2500,
+    "availableStock": 20
+  }
+]

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="test-successful-flow.xml" />
+	<munit:test name="test-successful-flow-post:orders:application:json:RouterTest" doc:id="56d79e31-498b-4834-b0f3-3e01ae25f563" description="Test">
+		<munit:behavior >
+			<munit:set-event doc:name="Set Event" doc:id="39ca8827-6832-40ea-87e5-7eb67adb58d0" >
+				<munit:payload value='#[{&#10;  "customerId": "CUST1001",&#10;  "customerName": "Hruday",&#10;  "customerEmail": "hruday@example.com",&#10;  "items": [&#10;    {&#10;      "productId": "P1001",&#10;      "quantity": 2&#10;    }&#10;  ]&#10;}]' />
+			</munit:set-event>
+			<munit-tools:mock-when doc:name="Mock when" doc:id="7b882670-1016-40f8-aa73-22173482081a" processor="email:send">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="91260d56-9687-47a5-bea2-04e232423a5b" attributeName="doc:id" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[payload]" mediaType="application/java" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<set-variable value='#[%dw 2.0&#10;output application/java&#10;---&#10;{&#10;  status: "SENT",&#10;  orderId: "ORD-TEST-001",&#10;  customerEmail: "hruday@example.com",&#10;  productName: "Wireless Headphones",&#10;  quantity: 2,&#10;  subtotal: 12000,&#10;  discount: 1200,&#10;  totalAmount: 10800,&#10;  message: "Customer notification sent successfully"&#10;}]' doc:name="Set Variable" doc:id="ea2a0740-50e7-464f-b57f-1d31195eb2cf" variableName="notificationResponse"/>
+			<flow-ref doc:name="Flow-ref to post:orders:application:json:Router" doc:id="2c3715a2-6cb5-4c4c-9273-dd4c04cdda56" name="post:orders:application:json:Router" target="flowResponse"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="Assert that" doc:id="512976a3-c9ac-4e05-bf1d-f343e10ec9af" expression="#[vars.flowResponse.status]" is='#[MunitTools::equalTo("SENT")]'/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

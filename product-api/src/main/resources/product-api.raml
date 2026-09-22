@@ -1,0 +1,28 @@
+#%RAML 1.0
+title: Product API
+version: v1
+baseUri: /api
+
+/products/{productId}:
+  get:
+    description: Get product details and stock availability
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              {
+                "productId": "P1001",
+                "productName": "Wireless Headphones",
+                "price": 6000,
+                "availableStock": 10
+              }
+
+      404:
+        body:
+          application/json:
+            example:
+              {
+                "error": "PRODUCT_NOT_FOUND",
+                "message": "Product not found"
+              }
